@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Lucidity</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#1a1a1a">
+<link rel="icon" href="./icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lucidity">
+<style>
+  :root {
+    --bg: #1a1a1a;
+    --surface: #242424;
+    --surface-hi: #2c2c2c;
+    --border: #363636;
+    --border-mid: #444444;
+    --text: #e8e5e0;
+    --text-mid: #a09890;
+    --text-dim: #686260;
+    --accent: #c9a96e;
+    --accent-dim: #a07840;
+    --accent-deep: #4a3010;
+    --accent-pale: #f0e4cc;
+    --danger-bg: #2a1a1a; --danger-tx: #e87060; --danger-bd: #6a2828;
+    --warning-bg: #272010; --warning-tx: #c8982a; --warning-bd: #6a5018;
+    --success-bg: #142018; --success-tx: #6aaa5a; --success-bd: #284830;
+    --info-bg: #1a1e2a; --info-tx: #6090c8; --info-bd: #2a3550;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text-mid);
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 1.25rem 1.25rem calc(5.5rem + env(safe-area-inset-bottom));
+    min-height: 100vh;
+  }
+
+  .label {
+    font-size: 10px; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.09em; color: var(--text-dim);
+  }
+
+  /* ---------- Header ---------- */
+  header { padding: 0.5rem 0 1.5rem; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; }
+  .brand svg { color: var(--accent); }
+  .brand h1 {
+    font-size: 16px; font-weight: 500; color: var(--text);
+    letter-spacing: 0.02em;
+  }
+  .brand .sub { font-size: 10px; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 12px; padding: 0.9rem 1rem;
+  }
+  .stat .num {
+    font-size: 22px; font-weight: 500; color: var(--text);
+    line-height: 1.2; display: flex; align-items: baseline; gap: 4px;
+  }
+  .stat .num .unit { font-size: 11px; color: var(--text-dim); font-weight: 400; }
+  .stat .lbl { margin-top: 2px; }
+  .stat.accent .num { color: var(--accent); }
+
+  /* ---------- Tabs ---------- */
+  nav.tabs {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: rgba(26,26,26,0.92);
+    backdrop-filter: blur(12px);
+    border-top: 0.5px solid var(--border);
+    display: flex; justify-content: center; gap: 2px;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    z-index: 50;
+  }
+  nav.tabs button {
+    flex: 1; max-width: 120px;
+    background: none; border: none; cursor: pointer;
+    color: var(--text-dim); font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    padding: 6px 2px; border-radius: 8px;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.03em;
+    transition: color 0.15s;
+  }
+  nav.tabs button svg { stroke-width: 1.7; }
+  nav.tabs button.active { color: var(--accent); }
+
+  /* ---------- Panels ---------- */
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade 0.25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .section-title {
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 1.5rem 0 0.75rem;
+  }
+  .section-title h2 { font-size: 13px; font-weight: 500; color: var(--text); }
+  .section-title:first-child { margin-top: 0; }
+
+  .card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 12px; padding: 1.25rem; margin-bottom: 12px;
+  }
+  .card p.hint { font-size: 12px; color: var(--text-dim); margin-top: 6px; line-height: 1.6; }
+
+  /* ---------- Practice steps ---------- */
+  .step {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 0.9rem 0; border-top: 0.5px solid var(--border);
+  }
+  .step:first-of-type { border-top: none; padding-top: 0; }
+  .step-body { flex: 1; }
+  .step-body .t { font-size: 13px; font-weight: 500; color: var(--text); }
+  .step-body .d { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+  .check {
+    width: 26px; height: 26px; flex-shrink: 0; margin-top: 1px;
+    border: 0.5px solid var(--border-mid); border-radius: 8px;
+    background: var(--bg); cursor: pointer; color: transparent;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .check.on {
+    background: var(--accent); border-color: var(--accent);
+    color: var(--accent-deep);
+  }
+  .check svg { stroke-width: 2.5; }
+
+  .counter { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .counter button {
+    width: 30px; height: 30px; border-radius: 8px;
+    border: 0.5px solid var(--border-mid); background: var(--bg);
+    color: var(--text); font-size: 18px; cursor: pointer; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .counter button:active { background: var(--surface-hi); }
+  .counter .val {
+    min-width: 30px; text-align: center; font-size: 15px;
+    font-weight: 500; color: var(--accent);
+  }
+  .counter .target { font-size: 11px; color: var(--text-dim); }
+
+  .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .toggle-pill {
+    border-radius: 20px; font-size: 11px; font-weight: 500;
+    padding: 6px 14px; cursor: pointer; font-family: inherit;
+    background: var(--bg); border: 0.5px solid var(--border-mid);
+    color: var(--text-mid); transition: all 0.15s;
+  }
+  .toggle-pill.on {
+    background: var(--success-bg); border-color: var(--success-bd);
+    color: var(--success-tx);
+  }
+  .toggle-pill.sel {
+    background: var(--surface-hi); border-color: var(--accent); color: var(--accent);
+  }
+
+  /* ---------- Forms ---------- */
+  label.field { display: block; margin-bottom: 1rem; }
+  label.field .label { display: block; margin: 0 0 8px; }
+  input[type=text], input[type=number], textarea {
+    width: 100%; background: var(--bg);
+    border: 0.5px solid var(--border-mid); border-radius: 8px;
+    color: var(--text); font-family: inherit; font-size: 13px;
+    padding: 10px 12px; outline: none; resize: vertical;
+  }
+  input:focus, textarea:focus { border-color: var(--accent-dim); }
+  textarea { min-height: 90px; line-height: 1.6; }
+  ::placeholder { color: var(--text-dim); }
+
+  .row { display: flex; gap: 12px; }
+  .row > * { flex: 1; }
+
+  .vivid { display: flex; gap: 6px; }
+  .vivid button {
+    flex: 1; height: 34px; border-radius: 8px; cursor: pointer;
+    background: var(--bg); border: 0.5px solid var(--border-mid);
+    color: var(--text-dim); font-family: inherit; font-size: 13px; font-weight: 500;
+    transition: all 0.15s;
+  }
+  .vivid button.on { background: var(--surface-hi); border-color: var(--accent); color: var(--accent); }
+
+  .btn-primary {
+    width: 100%; background: var(--accent); color: var(--accent-deep);
+    border: none; border-radius: 8px; padding: 11px;
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    cursor: pointer; margin-top: 4px;
+  }
+  .btn-primary:disabled { background: var(--surface-hi); color: var(--text-dim); cursor: default; }
+  .btn-stop {
+    width: 100%; background: var(--danger-bg); color: var(--danger-tx);
+    border: 0.5px solid var(--danger-bd); border-radius: 8px; padding: 11px;
+    font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 4px;
+  }
+
+  /* sign input */
+  .sign-input { display: flex; gap: 8px; }
+  .sign-input input { flex: 1; }
+  .sign-input button {
+    background: var(--surface-hi); border: 0.5px solid var(--border-mid);
+    border-radius: 8px; color: var(--accent); cursor: pointer;
+    padding: 0 16px; font-family: inherit; font-size: 13px; font-weight: 500;
+  }
+  .tag-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .tag {
+    background: var(--surface-hi); border: 0.5px solid var(--border);
+    border-radius: 20px; padding: 5px 10px 5px 12px;
+    font-size: 11px; color: var(--text-mid);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tag button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; }
+
+  /* ---------- Journal entries ---------- */
+  .entry {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: 12px; padding: 1.1rem 1.25rem; margin-bottom: 10px;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .entry:hover { border-color: var(--border-mid); }
+  .entry-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .entry-head .et { font-size: 13px; font-weight: 500; color: var(--text); }
+  .entry-head .chev { color: var(--text-dim); transition: transform 0.2s; flex-shrink: 0; }
+  .entry.open .chev { transform: rotate(180deg); }
+  .entry-meta { display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap; }
+  .entry-date { font-size: 11px; color: var(--text-dim); }
+  .badge {
+    border-radius: 20px; font-size: 10px; font-weight: 500;
+    padding: 2px 9px; letter-spacing: 0.03em;
+  }
+  .badge.lucid { background: var(--success-bg); color: var(--success-tx); border: 0.5px solid var(--success-bd); }
+  .badge.vivid { background: var(--info-bg); color: var(--info-tx); border: 0.5px solid var(--info-bd); }
+  .entry-detail { display: none; margin-top: 12px; }
+  .entry.open .entry-detail { display: block; }
+  .entry-detail p.body {
+    font-size: 13px; color: var(--text-mid); line-height: 1.7;
+    white-space: pre-wrap; padding-top: 12px; border-top: 0.5px solid var(--border);
+  }
+  .entry-detail .signs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .entry-detail .signs .s {
+    background: var(--surface-hi); border-radius: 20px;
+    font-size: 10px; padding: 3px 10px; color: var(--accent);
+    border: 0.5px solid var(--border);
+  }
+  .entry-detail .del {
+    margin-top: 12px; background: var(--danger-bg); color: var(--danger-tx);
+    border: 0.5px solid var(--danger-bd); border-radius: 6px;
+    padding: 6px 12px; font-size: 11px; font-family: inherit; cursor: pointer;
+  }
+
+  /* ---------- Signs panel ---------- */
+  .sign-bar { margin-bottom: 14px; }
+  .sign-bar-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+  .sign-bar-top .name { font-size: 13px; color: var(--text); font-weight: 500; }
+  .sign-bar-top .cnt { font-size: 11px; color: var(--text-dim); }
+  .sign-track { height: 7px; background: var(--bg); border-radius: 20px; overflow: hidden; border: 0.5px solid var(--border); }
+  .sign-fill { height: 100%; background: var(--accent); border-radius: 20px; }
+
+  .empty {
+    text-align: center; padding: 2.5rem 1.25rem; color: var(--text-dim);
+    font-size: 13px; line-height: 1.7;
+  }
+  .empty svg { color: var(--border-mid); margin-bottom: 12px; }
+
+  .callout {
+    border-left: 2.5px solid var(--accent); background: var(--bg);
+    border-radius: 0 8px 8px 0; padding: 12px 14px;
+    font-size: 12px; font-style: italic; color: var(--text-mid);
+    line-height: 1.6; margin-top: 12px;
+  }
+  .note {
+    background: var(--info-bg); border: 0.5px solid var(--info-bd);
+    border-radius: 8px; padding: 11px 13px; font-size: 12px;
+    color: var(--info-tx); line-height: 1.55; margin-top: 12px;
+  }
+  .toast {
+    position: fixed; left: 50%; bottom: calc(6rem + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface-hi); border: 0.5px solid var(--border-mid);
+    color: var(--text); border-radius: 8px; padding: 10px 18px;
+    font-size: 12px; opacity: 0; pointer-events: none;
+    transition: all 0.25s; z-index: 60; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ---------- Session status + prompt overlay ---------- */
+  .session-status {
+    display: flex; align-items: center; gap: 10px; margin-top: 14px;
+    padding-top: 14px; border-top: 0.5px solid var(--border);
+    font-size: 12px; color: var(--text-mid);
+  }
+  .session-status .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--success-tx);
+    box-shadow: 0 0 0 0 rgba(106,170,90,0.5); animation: pulse 1.6s infinite;
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(106,170,90,0.45); }
+    70% { box-shadow: 0 0 0 7px rgba(106,170,90,0); }
+    100% { box-shadow: 0 0 0 0 rgba(106,170,90,0); }
+  }
+  .session-status b { color: var(--accent); font-weight: 500; }
+
+  .overlay {
+    position: fixed; inset: 0; background: rgba(10,10,10,0.82);
+    backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center;
+    z-index: 80; padding: 1.5rem;
+  }
+  .overlay.show { display: flex; animation: fade 0.2s ease; }
+  .prompt-card {
+    background: var(--surface); border: 0.5px solid var(--border-mid);
+    border-radius: 16px; padding: 1.75rem 1.5rem; max-width: 360px; width: 100%;
+    text-align: center;
+  }
+  .prompt-card .eye { color: var(--accent); margin-bottom: 14px; }
+  .prompt-card .q { font-size: 18px; font-weight: 500; color: var(--text); line-height: 1.4; }
+  .prompt-card .tech { font-size: 13px; color: var(--text-mid); margin-top: 12px; line-height: 1.6; }
+  .prompt-card .sign-cue {
+    margin-top: 14px; display: inline-block;
+    background: var(--bg); border-left: 2.5px solid var(--accent);
+    border-radius: 0 8px 8px 0; padding: 8px 12px;
+    font-size: 12px; color: var(--accent); font-style: italic;
+  }
+  .prompt-card .actions { display: flex; gap: 8px; margin-top: 1.5rem; }
+  .prompt-card .actions button {
+    flex: 1; border-radius: 8px; padding: 11px; font-family: inherit;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+  }
+  .prompt-card .did { background: var(--accent); color: var(--accent-deep); border: none; }
+  .prompt-card .skip {
+    background: var(--bg); color: var(--text-dim); border: 0.5px solid var(--border-mid);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+      <path d="M16 4.5l.4 1.2 1.2.4-1.2.4-.4 1.2-.4-1.2-1.2-.4 1.2-.4z"/>
+    </svg>
+    <div>
+      <h1>Lucidity</h1>
+      <div class="sub label">Dream journal &amp; practice</div>
+    </div>
+  </div>
+  <div class="stats" id="stats">
+    <div class="stat"><div class="num" id="s-recall">0<span class="unit">d</span></div><div class="lbl label">Recall streak</div></div>
+    <div class="stat accent"><div class="num" id="s-lucid">0</div><div class="lbl label">Lucid dreams</div></div>
+    <div class="stat"><div class="num" id="s-total">0</div><div class="lbl label">Total logged</div></div>
+  </div>
+</header>
+
+<!-- ================= TONIGHT ================= -->
+<section class="panel active" id="panel-tonight">
+  <div class="section-title"><h2 id="today-label">Tonight's practice</h2></div>
+
+  <div class="card">
+    <div class="step">
+      <button class="check" data-key="rc"></button>
+      <div class="step-body">
+        <div class="t">Reality checks</div>
+        <div class="d">Ask "am I dreaming?" and test it. Push a finger into your palm, or read text twice. Run a session from the Practice tab.</div>
+        <div class="counter">
+          <button id="rc-minus">-</button>
+          <span class="val" id="rc-val">0</span>
+          <button id="rc-plus">+</button>
+          <span class="target">of 6 today</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <button class="check" data-key="mild"></button>
+      <div class="step-body">
+        <div class="t">MILD intention</div>
+        <div class="d">As you drift off, repeat: "Next time I'm dreaming, I'll know I'm dreaming." Picture a recent dream.</div>
+        <div class="pill-row">
+          <button class="toggle-pill" data-toggle="mild">Set my intention</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <button class="check" data-key="journaled"></button>
+      <div class="step-body">
+        <div class="t">Journal on waking</div>
+        <div class="d">Log whatever you remember before moving. Even fragments train recall.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    Stay calm the moment you realise you're dreaming - excitement tends to wake you. Rub your hands together or stare at a detail to stabilise the scene.
+  </div>
+</section>
+
+<!-- ================= PRACTICE ================= -->
+<section class="panel" id="panel-practice">
+  <div class="section-title"><h2>Reality check session</h2></div>
+  <div class="card">
+    <p class="hint" style="margin:0 0 14px">Fires prompts at random intervals so you can't anticipate them. Each one asks you to genuinely question whether you're awake. Runs only while this screen is open.</p>
+
+    <span class="label" style="display:block;margin-bottom:8px">Cadence</span>
+    <div class="pill-row" id="cadence" style="margin-top:0">
+      <button class="toggle-pill" data-min="30" data-max="90">Quick test</button>
+      <button class="toggle-pill" data-min="120" data-max="300">Frequent</button>
+      <button class="toggle-pill" data-min="600" data-max="1200">Spaced</button>
+    </div>
+
+    <div class="pill-row" style="margin-top:14px">
+      <button class="toggle-pill" id="sound-toggle">Sound on</button>
+    </div>
+
+    <button class="btn-primary" id="session-btn" style="margin-top:1.25rem">Start session</button>
+
+    <div class="session-status" id="session-status" style="display:none">
+      <span class="dot"></span>
+      <span>Session active &middot; <b id="prompt-count">0</b> checks done</span>
+    </div>
+  </div>
+
+  <div class="section-title"><h2>All-day reminders</h2></div>
+  <div class="card">
+    <p class="hint" style="margin:0 0 14px">Download a calendar file with reality checks at random times, then import it once into your calendar app. These reminders fire even when this app is closed - the reliable way to spread checks across the day.</p>
+
+    <div class="row" style="margin-bottom:1rem">
+      <label class="field" style="margin:0">
+        <span class="label">From (hour)</span>
+        <input type="number" id="ics-from" min="0" max="23" value="9">
+      </label>
+      <label class="field" style="margin:0">
+        <span class="label">To (hour)</span>
+        <input type="number" id="ics-to" min="1" max="24" value="21">
+      </label>
+    </div>
+    <div class="row" style="margin-bottom:1rem">
+      <label class="field" style="margin:0">
+        <span class="label">Checks / day</span>
+        <input type="number" id="ics-count" min="1" max="24" value="6">
+      </label>
+      <label class="field" style="margin:0">
+        <span class="label">Days ahead</span>
+        <input type="number" id="ics-days" min="1" max="30" value="7">
+      </label>
+    </div>
+
+    <button class="btn-primary" id="ics-btn">Download calendar file</button>
+    <div class="note">Tip: set the reminder/alert on the imported events to "at time of event" so each one nudges you the moment it lands.</div>
+  </div>
+</section>
+
+<!-- ================= JOURNAL ================= -->
+<section class="panel" id="panel-journal">
+  <div class="section-title"><h2>New dream</h2></div>
+  <div class="card">
+    <label class="field">
+      <span class="label">Title</span>
+      <input type="text" id="f-title" placeholder="A short name for the dream">
+    </label>
+    <label class="field">
+      <span class="label">What happened</span>
+      <textarea id="f-body" placeholder="Write it in present tense, as much as you recall..."></textarea>
+    </label>
+
+    <label class="field">
+      <span class="label">Vividness</span>
+      <div class="vivid" id="f-vivid">
+        <button data-v="1">1</button><button data-v="2">2</button>
+        <button data-v="3">3</button><button data-v="4">4</button>
+        <button data-v="5">5</button>
+      </div>
+    </label>
+
+    <label class="field">
+      <span class="label">Dream signs</span>
+      <div class="sign-input">
+        <input type="text" id="f-sign" placeholder="e.g. flying, school, late" autocapitalize="none">
+        <button id="f-sign-add">Add</button>
+      </div>
+      <div class="tag-pills" id="f-tags"></div>
+    </label>
+
+    <div class="pill-row" style="margin-bottom:1rem">
+      <button class="toggle-pill" id="f-lucid">I was lucid</button>
+    </div>
+
+    <button class="btn-primary" id="f-save">Save dream</button>
+  </div>
+
+  <div class="section-title"><h2>Dream log</h2><span class="label" id="log-count"></span></div>
+  <div id="log"></div>
+</section>
+
+<!-- ================= SIGNS ================= -->
+<section class="panel" id="panel-signs">
+  <div class="section-title"><h2>Your dream signs</h2></div>
+  <p class="hint" style="margin:0 0 1rem;color:var(--text-dim);font-size:12px">Recurring elements across your dreams. The more often one appears, the better a trigger it is for a reality check. When you next notice it, you might just wake up inside the dream.</p>
+  <div id="signs-list"></div>
+</section>
+
+<nav class="tabs">
+  <button class="active" data-tab="tonight">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    Tonight
+  </button>
+  <button data-tab="practice">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/></svg>
+    Practice
+  </button>
+  <button data-tab="journal">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+    Journal
+  </button>
+  <button data-tab="signs">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+    Signs
+  </button>
+</nav>
+
+<!-- prompt overlay -->
+<div class="overlay" id="overlay">
+  <div class="prompt-card">
+    <svg class="eye" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+    <div class="q" id="prompt-q">Are you dreaming?</div>
+    <div class="tech" id="prompt-tech"></div>
+    <div class="sign-cue" id="prompt-sign" style="display:none"></div>
+    <div class="actions">
+      <button class="skip" id="prompt-skip">Dismiss</button>
+      <button class="did" id="prompt-did">I questioned it</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const todayKey = () => new Date().toISOString().slice(0,10);
+
+let entries = [];
+let practice = {};            // today's bedtime checklist state
+let prefs = {};               // persisted prefs (sound, cadence, ics config)
+let draft = { vivid: 0, lucid: false, signs: [] };
+
+/* ---------- portable storage (window.storage in artifact, localStorage on GitHub Pages) ---------- */
+const store = {
+  async get(k){
+    if (typeof window !== 'undefined' && window.storage) {
+      try { return await window.storage.get(k); } catch { return null; }
+    }
+    try { const v = localStorage.getItem(k); return v === null ? null : { key:k, value:v }; }
+    catch { return null; }
+  },
+  async set(k, val){
+    if (typeof window !== 'undefined' && window.storage) {
+      try { return await window.storage.set(k, val); } catch { return null; }
+    }
+    try { localStorage.setItem(k, val); return { key:k, value:val }; } catch { return null; }
+  },
+  async del(k){
+    if (typeof window !== 'undefined' && window.storage) {
+      try { return await window.storage.delete(k); } catch { return null; }
+    }
+    try { localStorage.removeItem(k); } catch {}
+  }
+};
+
+function toast(msg){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+/* ---------- load / save ---------- */
+async function load(){
+  const e = await store.get('entries'); entries = e ? safeParse(e.value, []) : [];
+  const p = await store.get('practice:'+todayKey()); practice = p ? safeParse(p.value, {}) : {};
+  const pr = await store.get('prefs'); prefs = pr ? safeParse(pr.value, {}) : {};
+}
+function safeParse(s, fallback){ try { return JSON.parse(s); } catch { return fallback; } }
+async function saveEntries(){ if(!(await store.set('entries', JSON.stringify(entries)))) toast('Could not save'); }
+async function savePractice(){ await store.set('practice:'+todayKey(), JSON.stringify(practice)); }
+async function savePrefs(){ await store.set('prefs', JSON.stringify(prefs)); }
+
+/* ---------- stats ---------- */
+function recallStreak(){
+  const days = new Set(entries.map(e => e.date));
+  let streak = 0, d = new Date();
+  if(!days.has(d.toISOString().slice(0,10))) d.setDate(d.getDate()-1);
+  while(days.has(d.toISOString().slice(0,10))){ streak++; d.setDate(d.getDate()-1); }
+  return streak;
+}
+function renderStats(){
+  $('#s-total').textContent = entries.length;
+  $('#s-lucid').textContent = entries.filter(e=>e.lucid).length;
+  $('#s-recall').innerHTML = recallStreak() + '<span class="unit">d</span>';
+}
+
+/* ---------- tonight ---------- */
+function renderPractice(){
+  document.querySelectorAll('.check').forEach(c=>{
+    const on = !!practice[c.dataset.key];
+    c.classList.toggle('on', on);
+    c.innerHTML = on ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : '';
+  });
+  document.querySelectorAll('[data-toggle]').forEach(b=>{
+    b.classList.toggle('on', !!practice[b.dataset.toggle]);
+  });
+  $('#rc-val').textContent = practice.rcCount || 0;
+}
+function bumpRealityCheck(n){
+  practice.rcCount = Math.max(0, (practice.rcCount||0) + n);
+  if(practice.rcCount >= 6) practice.rc = true;
+  savePractice(); renderPractice();
+}
+function setupTonight(){
+  document.querySelectorAll('.check').forEach(c=>{
+    c.onclick = ()=>{ practice[c.dataset.key] = !practice[c.dataset.key]; savePractice(); renderPractice(); };
+  });
+  document.querySelectorAll('[data-toggle]').forEach(b=>{
+    b.onclick = ()=>{ practice[b.dataset.toggle] = !practice[b.dataset.toggle]; savePractice(); renderPractice(); };
+  });
+  $('#rc-plus').onclick = ()=> bumpRealityCheck(1);
+  $('#rc-minus').onclick = ()=> bumpRealityCheck(-1);
+}
+
+/* ---------- practice session ---------- */
+const QUESTIONS = [
+  "Are you dreaming?",
+  "Is this real?",
+  "Wait - is this a dream?",
+  "Awake, or dreaming?",
+  "Could this be a dream right now?"
+];
+const TECHNIQUES = [
+  "Push a finger from one hand into your opposite palm. In a dream it often slips through.",
+  "Read a line of text, look away, then read it again. In dreams it tends to change.",
+  "Pinch your nose shut and try to breathe in. If air still flows, you're dreaming.",
+  "Look at your hands. Count your fingers - dreams rarely get them right.",
+  "Glance at a clock or your phone twice. Dream time won't hold steady.",
+  "Try to push your finger through a solid surface near you."
+];
+let session = { running:false, timer:null, count:0, min:120, max:300 };
+
+function topSign(){
+  const counts = {};
+  entries.forEach(e => (e.signs||[]).forEach(s => counts[s] = (counts[s]||0)+1));
+  const arr = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if(!arr.length) return null;
+  // pick randomly among the top few so it varies
+  const top = arr.slice(0, Math.min(3, arr.length));
+  return top[Math.floor(Math.random()*top.length)][0];
+}
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function beep(){
+  if(!prefs.sound) return;
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return;
+    const ctx = beep._ctx || (beep._ctx = new Ctx());
+    if(ctx.state === 'suspended') ctx.resume();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine'; o.frequency.value = 660;
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+    o.start(); o.stop(ctx.currentTime + 0.62);
+  } catch {}
+}
+function tryNotify(text){
+  try {
+    if('Notification' in window && Notification.permission === 'granted'){
+      new Notification('Reality check', { body: text });
+    }
+  } catch {}
+}
+
+function firePrompt(){
+  $('#prompt-q').textContent = pick(QUESTIONS);
+  $('#prompt-tech').textContent = pick(TECHNIQUES);
+  const sign = topSign();
+  const cue = $('#prompt-sign');
+  if(sign){ cue.style.display = 'inline-block'; cue.textContent = 'Watch for your dream sign: ' + sign; }
+  else { cue.style.display = 'none'; }
+  $('#overlay').classList.add('show');
+  beep();
+  tryNotify('Stop and ask: am I dreaming?');
+}
+function scheduleNext(){
+  const delay = (session.min + Math.random()*(session.max - session.min)) * 1000;
+  session.timer = setTimeout(()=>{ if(session.running) firePrompt(); }, delay);
+}
+function startSession(){
+  if(!prefs.cadence){ toast('Pick a cadence first'); return; }
+  // request notification permission (best-effort; works on deployed PWA)
+  try { if('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch {}
+  session.running = true; session.count = 0;
+  session.min = prefs.cadence.min; session.max = prefs.cadence.max;
+  $('#prompt-count').textContent = '0';
+  $('#session-status').style.display = 'flex';
+  $('#session-btn').textContent = 'Stop session';
+  $('#session-btn').className = 'btn-stop';
+  $('#session-btn').style.marginTop = '1.25rem';
+  scheduleNext();
+  toast('Session started');
+}
+function stopSession(){
+  session.running = false;
+  clearTimeout(session.timer);
+  $('#overlay').classList.remove('show');
+  $('#session-status').style.display = 'none';
+  $('#session-btn').textContent = 'Start session';
+  $('#session-btn').className = 'btn-primary';
+  $('#session-btn').style.marginTop = '1.25rem';
+}
+function resolvePrompt(counted){
+  $('#overlay').classList.remove('show');
+  if(counted){
+    session.count++;
+    $('#prompt-count').textContent = session.count;
+    bumpRealityCheck(1);
+  }
+  if(session.running) scheduleNext();
+}
+function setupPractice(){
+  document.querySelectorAll('#cadence button').forEach(b=>{
+    b.onclick = ()=>{
+      document.querySelectorAll('#cadence button').forEach(x=>x.classList.remove('sel'));
+      b.classList.add('sel');
+      prefs.cadence = { min:+b.dataset.min, max:+b.dataset.max, label:b.textContent };
+      savePrefs();
+    };
+  });
+  $('#sound-toggle').onclick = ()=>{
+    prefs.sound = !prefs.sound; savePrefs();
+    $('#sound-toggle').classList.toggle('on', prefs.sound);
+    $('#sound-toggle').textContent = prefs.sound ? 'Sound on' : 'Sound off';
+  };
+  $('#session-btn').onclick = ()=> session.running ? stopSession() : startSession();
+  $('#prompt-did').onclick = ()=> resolvePrompt(true);
+  $('#prompt-skip').onclick = ()=> resolvePrompt(false);
+}
+function renderPrefs(){
+  if(prefs.cadence){
+    document.querySelectorAll('#cadence button').forEach(b=>{
+      b.classList.toggle('sel', +b.dataset.min === prefs.cadence.min && +b.dataset.max === prefs.cadence.max);
+    });
+  }
+  if(prefs.sound === undefined) prefs.sound = true;
+  $('#sound-toggle').classList.toggle('on', prefs.sound);
+  $('#sound-toggle').textContent = prefs.sound ? 'Sound on' : 'Sound off';
+  if(prefs.ics){
+    $('#ics-from').value = prefs.ics.from; $('#ics-to').value = prefs.ics.to;
+    $('#ics-count').value = prefs.ics.count; $('#ics-days').value = prefs.ics.days;
+  }
+}
+
+/* ---------- .ics generator ---------- */
+function pad(n){ return String(n).padStart(2,'0'); }
+function icsStamp(d){
+  return d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()) +
+    'T' + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
+}
+function icsLocal(d){
+  return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) +
+    'T' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
+}
+function buildICS(){
+  const from = Math.max(0, Math.min(23, +$('#ics-from').value || 9));
+  let to = Math.max(from+1, Math.min(24, +$('#ics-to').value || 21));
+  const count = Math.max(1, Math.min(24, +$('#ics-count').value || 6));
+  const days = Math.max(1, Math.min(30, +$('#ics-days').value || 7));
+  prefs.ics = { from, to, count, days }; savePrefs();
+
+  const signs = (function(){
+    const c = {}; entries.forEach(e => (e.signs||[]).forEach(s => c[s] = (c[s]||0)+1));
+    return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+  })();
+
+  const lines = [
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Lucid//Reality Checks//EN',
+    'CALSCALE:GREGORIAN','METHOD:PUBLISH'
+  ];
+  const now = new Date();
+  const base = new Date(); base.setHours(0,0,0,0);
+
+  for(let d=0; d<days; d++){
+    // random minutes within the window, sorted, unique-ish
+    const slots = [];
+    for(let i=0;i<count;i++){
+      const mins = Math.floor((from*60) + Math.random()*((to-from)*60));
+      slots.push(mins);
+    }
+    slots.sort((a,b)=>a-b);
+    slots.forEach((mins, idx)=>{
+      const start = new Date(base);
+      start.setDate(base.getDate()+d);
+      start.setMinutes(mins);
+      if(start <= now) return; // skip past times today
+      const end = new Date(start.getTime() + 60*1000);
+      const sign = signs.length ? signs[Math.floor(Math.random()*Math.min(3,signs.length))] : null;
+      const desc = sign
+        ? 'Stop and genuinely ask: am I dreaming? Test it. Watch for your dream sign: ' + sign
+        : 'Stop and genuinely ask: am I dreaming? Push a finger into your palm, or read text twice.';
+      const uid = 'lucid-' + start.getTime() + '-' + idx + '@local';
+      lines.push(
+        'BEGIN:VEVENT',
+        'UID:' + uid,
+        'DTSTAMP:' + icsStamp(now),
+        'DTSTART:' + icsLocal(start),
+        'DTEND:' + icsLocal(end),
+        'SUMMARY:Reality check - am I dreaming?',
+        'DESCRIPTION:' + desc,
+        'BEGIN:VALARM','TRIGGER:PT0M','ACTION:DISPLAY','DESCRIPTION:Reality check','END:VALARM',
+        'END:VEVENT'
+      );
+    });
+  }
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+function downloadICS(){
+  if(!entries.length){ /* still fine, generic checks */ }
+  const ics = buildICS();
+  const blob = new Blob([ics], { type:'text/calendar' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'lucid-reality-checks.ics';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  toast('Calendar file downloaded');
+}
+
+/* ---------- journal form ---------- */
+function renderTags(){
+  const c = $('#f-tags'); c.innerHTML='';
+  draft.signs.forEach((s,i)=>{
+    const el = document.createElement('span'); el.className='tag';
+    el.innerHTML = escapeHtml(s) + ' <button>&times;</button>';
+    el.querySelector('button').onclick = ()=>{ draft.signs.splice(i,1); renderTags(); };
+    c.appendChild(el);
+  });
+}
+function addSign(){
+  const inp = $('#f-sign');
+  const v = inp.value.trim().toLowerCase();
+  if(v && !draft.signs.includes(v)){ draft.signs.push(v); renderTags(); }
+  inp.value=''; inp.focus();
+}
+function setupForm(){
+  $('#f-sign-add').onclick = addSign;
+  $('#f-sign').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); addSign(); }});
+  document.querySelectorAll('#f-vivid button').forEach(b=>{
+    b.onclick = ()=>{
+      draft.vivid = +b.dataset.v;
+      document.querySelectorAll('#f-vivid button').forEach(x=>x.classList.toggle('on', +x.dataset.v <= draft.vivid));
+    };
+  });
+  $('#f-lucid').onclick = ()=>{ draft.lucid = !draft.lucid; $('#f-lucid').classList.toggle('on', draft.lucid); };
+  $('#f-save').onclick = saveDream;
+}
+async function saveDream(){
+  const title = $('#f-title').value.trim();
+  const body = $('#f-body').value.trim();
+  if(!title && !body){ toast('Add a title or some detail first'); return; }
+  entries.unshift({
+    id: Date.now(), date: todayKey(), ts: new Date().toISOString(),
+    title: title || 'Untitled dream', body, vivid: draft.vivid,
+    lucid: draft.lucid, signs: [...draft.signs]
+  });
+  await saveEntries();
+  practice.journaled = true; savePractice();
+  $('#f-title').value=''; $('#f-body').value='';
+  draft = { vivid:0, lucid:false, signs:[] };
+  renderTags();
+  document.querySelectorAll('#f-vivid button').forEach(x=>x.classList.remove('on'));
+  $('#f-lucid').classList.remove('on');
+  renderStats(); renderLog(); renderSigns(); renderPractice();
+  toast('Dream saved');
+}
+
+/* ---------- log ---------- */
+function fmtDate(iso){
+  return new Date(iso).toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric'});
+}
+function renderLog(){
+  const log = $('#log');
+  $('#log-count').textContent = entries.length ? entries.length + ' entries' : '';
+  if(!entries.length){
+    log.innerHTML = '<div class="empty"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><div>No dreams logged yet.<br>Write down whatever you remember the moment you wake.</div></div>';
+    return;
+  }
+  log.innerHTML='';
+  entries.forEach(e=>{
+    const el = document.createElement('div'); el.className='entry';
+    let badges = '';
+    if(e.lucid) badges += '<span class="badge lucid">Lucid</span>';
+    if(e.vivid>=4) badges += '<span class="badge vivid">Vivid</span>';
+    let signs = e.signs && e.signs.length ? '<div class="signs">'+e.signs.map(s=>'<span class="s">'+escapeHtml(s)+'</span>').join('')+'</div>' : '';
+    let bodyHtml = e.body ? '<p class="body">'+escapeHtml(e.body)+'</p>' : '';
+    el.innerHTML =
+      '<div class="entry-head"><span class="et">'+escapeHtml(e.title)+'</span>'+
+      '<svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>'+
+      '<div class="entry-meta"><span class="entry-date">'+fmtDate(e.ts)+'</span>'+badges+'</div>'+
+      '<div class="entry-detail">'+bodyHtml+signs+'<button class="del">Delete</button></div>';
+    el.querySelector('.entry-head').onclick = ()=> el.classList.toggle('open');
+    el.querySelector('.del').onclick = async (ev)=>{
+      ev.stopPropagation();
+      entries = entries.filter(x=>x.id!==e.id);
+      await saveEntries(); renderStats(); renderLog(); renderSigns();
+      toast('Deleted');
+    };
+    log.appendChild(el);
+  });
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ---------- signs ---------- */
+function renderSigns(){
+  const counts = {};
+  entries.forEach(e=> (e.signs||[]).forEach(s=> counts[s] = (counts[s]||0)+1 ));
+  const arr = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const list = $('#signs-list');
+  if(!arr.length){
+    list.innerHTML = '<div class="empty"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg><div>Tag dream signs as you log dreams<br>and your patterns will surface here.</div></div>';
+    return;
+  }
+  const max = arr[0][1];
+  list.innerHTML='';
+  arr.forEach(([name,cnt])=>{
+    const el = document.createElement('div'); el.className='sign-bar';
+    el.innerHTML =
+      '<div class="sign-bar-top"><span class="name">'+escapeHtml(name)+'</span>'+
+      '<span class="cnt">'+cnt+(cnt===1?' dream':' dreams')+'</span></div>'+
+      '<div class="sign-track"><div class="sign-fill" style="width:'+Math.round(cnt/max*100)+'%"></div></div>';
+    list.appendChild(el);
+  });
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('nav.tabs button').forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    b.classList.add('active');
+    $('#panel-'+b.dataset.tab).classList.add('active');
+    window.scrollTo(0,0);
+  };
+});
+
+/* ---------- init ---------- */
+(async function(){
+  setupTonight(); setupForm(); setupPractice();
+  $('#ics-btn').onclick = downloadICS;
+  await load();
+  renderStats(); renderPractice(); renderPrefs(); renderTags(); renderLog(); renderSigns();
+})();
+</script>
+<script>
+  // Register the service worker (relative path so it works in a GitHub Pages subfolder)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./service-worker.js').catch(function () {});
+    });
+  }
+</script>
+</body>
+</html>
