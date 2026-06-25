@@ -1,6 +1,6 @@
 /* Lucidity service worker
    Bump CACHE whenever you change index.html or any asset, so clients fetch the new version. */
-const CACHE = 'lucidity-v1';
+const CACHE = 'lucidity-v2';
 
 const ASSETS = [
   './',
