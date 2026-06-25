@@ -782,6 +782,15 @@ function icsLocal(d){
   return d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate()) +
     'T' + pad(d.getHours()) + pad(d.getMinutes()) + pad(d.getSeconds());
 }
+function icsEscape(s){
+  return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+}
+function icsFold(line){
+  if(line.length <= 73) return line;
+  let out = line.slice(0,73), rest = line.slice(73);
+  while(rest.length > 72){ out += '\r\n ' + rest.slice(0,72); rest = rest.slice(72); }
+  return out + '\r\n ' + rest;
+}
 function buildICS(){
   const from = Math.max(0, Math.min(23, +$('#ics-from').value || 9));
   let to = Math.max(from+1, Math.min(24, +$('#ics-to').value || 21));
@@ -794,60 +803,74 @@ function buildICS(){
     return Object.entries(c).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
   })();
 
-  const lines = [
-    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Lucid//Reality Checks//EN',
-    'CALSCALE:GREGORIAN','METHOD:PUBLISH'
-  ];
   const now = new Date();
+  const buffer = 2*60*1000; // 2 min lead time
   const base = new Date(); base.setHours(0,0,0,0);
 
-  for(let d=0; d<days; d++){
-    // random minutes within the window, sorted, unique-ish
-    const slots = [];
-    for(let i=0;i<count;i++){
-      const mins = Math.floor((from*60) + Math.random()*((to-from)*60));
-      slots.push(mins);
+  const nowMins = now.getHours()*60 + now.getMinutes();
+  function gen(startDay){
+    const events = [];
+    for(let d=0; d<days; d++){
+      const dayOffset = startDay + d;
+      // for today, draw times from the remaining window so the full count still fits
+      const lowMins = (dayOffset === 0) ? Math.max(from*60, nowMins + 3) : from*60;
+      const hiMins = to*60;
+      if(lowMins >= hiMins) continue; // no usable window left today; fallback rolls to tomorrow
+      const slots = [];
+      for(let i=0;i<count;i++) slots.push(Math.floor(lowMins + Math.random()*(hiMins-lowMins)));
+      slots.sort((a,b)=>a-b);
+      slots.forEach((mins, idx)=>{
+        const start = new Date(base);
+        start.setDate(base.getDate()+dayOffset);
+        start.setMinutes(mins);
+        if(dayOffset === 0 && start.getTime() <= now.getTime()+buffer) return; // safety guard
+        const end = new Date(start.getTime() + 60*1000);
+        const sign = signs.length ? signs[Math.floor(Math.random()*Math.min(3,signs.length))] : null;
+        const desc = sign
+          ? 'Stop and genuinely ask: am I dreaming? Test it. Watch for your dream sign: ' + sign
+          : 'Stop and genuinely ask: am I dreaming? Push a finger into your palm, or read text twice.';
+        events.push(
+          'BEGIN:VEVENT',
+          icsFold('UID:lucid-' + start.getTime() + '-' + dayOffset + '-' + idx + '@lucidity'),
+          'DTSTAMP:' + icsStamp(now),
+          'DTSTART:' + icsLocal(start),
+          'DTEND:' + icsLocal(end),
+          icsFold('SUMMARY:' + icsEscape('Reality check - am I dreaming?')),
+          icsFold('DESCRIPTION:' + icsEscape(desc)),
+          'BEGIN:VALARM','TRIGGER:PT0M','ACTION:DISPLAY',
+          icsFold('DESCRIPTION:' + icsEscape('Reality check')),
+          'END:VALARM',
+          'END:VEVENT'
+        );
+      });
     }
-    slots.sort((a,b)=>a-b);
-    slots.forEach((mins, idx)=>{
-      const start = new Date(base);
-      start.setDate(base.getDate()+d);
-      start.setMinutes(mins);
-      if(start <= now) return; // skip past times today
-      const end = new Date(start.getTime() + 60*1000);
-      const sign = signs.length ? signs[Math.floor(Math.random()*Math.min(3,signs.length))] : null;
-      const desc = sign
-        ? 'Stop and genuinely ask: am I dreaming? Test it. Watch for your dream sign: ' + sign
-        : 'Stop and genuinely ask: am I dreaming? Push a finger into your palm, or read text twice.';
-      const uid = 'lucid-' + start.getTime() + '-' + idx + '@local';
-      lines.push(
-        'BEGIN:VEVENT',
-        'UID:' + uid,
-        'DTSTAMP:' + icsStamp(now),
-        'DTSTART:' + icsLocal(start),
-        'DTEND:' + icsLocal(end),
-        'SUMMARY:Reality check - am I dreaming?',
-        'DESCRIPTION:' + desc,
-        'BEGIN:VALARM','TRIGGER:PT0M','ACTION:DISPLAY','DESCRIPTION:Reality check','END:VALARM',
-        'END:VEVENT'
-      );
-    });
+    return events;
   }
-  lines.push('END:VCALENDAR');
-  return lines.join('\r\n');
+
+  // Schedule from today; if today's window has already passed, roll to tomorrow so the file is never empty.
+  let events = gen(0);
+  if(events.filter(l => l === 'BEGIN:VEVENT').length === 0) events = gen(1);
+
+  const lines = [
+    'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Lucidity//Reality Checks//EN',
+    'CALSCALE:GREGORIAN','X-WR-CALNAME:Lucidity reality checks',
+    ...events,
+    'END:VCALENDAR'
+  ];
+  const n = events.filter(l => l === 'BEGIN:VEVENT').length;
+  return { ics: lines.join('\r\n'), count: n };
 }
 function downloadICS(){
-  if(!entries.length){ /* still fine, generic checks */ }
-  const ics = buildICS();
-  const blob = new Blob([ics], { type:'text/calendar' });
+  const { ics, count } = buildICS();
+  if(count === 0){ toast('No times left in that window today - try more days'); return; }
+  const blob = new Blob([ics], { type:'text/calendar;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'lucid-reality-checks.ics';
+  a.href = url; a.download = 'lucidity-reality-checks.ics';
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url), 2000);
-  toast('Calendar file downloaded');
+  toast(count + (count === 1 ? ' check scheduled' : ' checks scheduled'));
 }
-
 /* ---------- journal form ---------- */
 function renderTags(){
   const c = $('#f-tags'); c.innerHTML='';
